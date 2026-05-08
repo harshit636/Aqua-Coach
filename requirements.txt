@@ -1,5 +1,5 @@
 ﻿# AquaSmart Pro
 
-# This project is a static web app and does not require Python packages.
-# Use Python's built-in server for local development if needed:
+# Static front-end application: no Python packages are required.
+# To preview locally, run:
 # python -m http.server 8000

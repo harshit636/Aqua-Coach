@@ -42,7 +42,7 @@ AquaSmart Pro is a front-end hydration coach built for web browsers. It combines
 
 This is a static web application. There is no build step required.
 
-1. Open index.html directly in a modern browser
+1. Open index.html directly in a modern browser.
 2. OR run a local server from the project root:
    `ash
    python -m http.server 8000
