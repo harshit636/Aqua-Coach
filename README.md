@@ -6,7 +6,7 @@ AquaSmart Pro empowers users with a professional hydration dashboard, AI-style i
 
 ---
 
-## 🚀 Project Overview
+## Project Overview
 
 AquaSmart Pro is a front-end hydration coach built for web browsers. It combines premium visual design with interactive hydration tracking features, including:
 
@@ -16,14 +16,14 @@ AquaSmart Pro is a front-end hydration coach built for web browsers. It combines
 - Voice-enabled logging and instant feedback
 - Dark mode, responsive layout, and advanced microinteractions
 
-## 🎯 What Makes It Professional
+## What Makes It Professional
 
 - Clean, modern landing page and dashboard styling
 - Glassmorphism UI with smooth animations and responsive components
 - Intuitive onboarding flow with profile setup and personalized hydration goals
 - Realistic product pitch suitable for recruiter review or portfolio showcase
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 - HTML5
 - Tailwind CSS (via CDN)
@@ -32,36 +32,33 @@ AquaSmart Pro is a front-end hydration coach built for web browsers. It combines
 - Canvas Confetti (via CDN)
 - Vanilla JavaScript for UI state, interactions, and logging logic
 
-## 📂 Project Structure
+## Project Structure
 
 - index.html — main application UI and logic
 - README.md — professional overview and usage guide
-- 
-equirements.txt — project dependency notes for clarity
+- requirements.txt — project dependency notes for clarity
 
-## 💻 Local Setup
+## Local Setup
 
 This is a static web application. There is no build step required.
 
 1. Open index.html directly in a modern browser.
-2. OR run a local server from the project root:
-   `ash
+2. Or run a local server from the project root using Python:
    python -m http.server 8000
-   `
 3. Visit http://localhost:8000
 
-## ✨ Recommended Enhancements
+## Recommended Enhancements
 
 - Add user authentication and persistence with a backend service
 - Integrate a real AI assistant for conversational hydration coaching
 - Enhance analytics with longer-term trend tracking and recommendations
 - Add mobile app support or PWA capabilities for offline use
 
-## 📌 Notes
+## Notes
 
 This repository is intentionally designed as a polished front-end MVP that demonstrates strong UI design, interaction quality, and product thinking.
 
-## 👤 Author
+## Author
 
 Harshit636 — AquaSmart Pro
 
