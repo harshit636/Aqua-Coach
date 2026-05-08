@@ -1,0 +1,985 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaSmart | Ultimate AI Hydration Coach</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        darkBg: '#0f172a',
+                        darkCard: '#1e293b'
+                    },
+                    animation: {
+                        'float': 'float 3s ease-in-out infinite',
+                        'wave': 'wave 2s infinite linear',
+                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        wave: {
+                            '0%': { transform: 'translateX(0)' },
+                            '100%': { transform: 'translateX(-50%)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s, color 0.3s; }
+        
+        /* Glassmorphism */
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .dark .glass { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255, 255, 255, 0.05); }
+
+        /* Water Bottle Visualization */
+        .bottle-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 0; }
+        .bottle-cap { width: 40px; height: 15px; background: #cbd5e1; border-radius: 5px 5px 0 0; transition: background 0.3s;}
+        .dark .bottle-cap { background: #475569; }
+        .bottle-neck { width: 30px; height: 20px; border-left: 4px solid #cbd5e1; border-right: 4px solid #cbd5e1; transition: border-color 0.3s;}
+        .dark .bottle-neck { border-color: #475569; }
+        .bottle-body { width: 140px; height: 300px; border: 4px solid #cbd5e1; border-top: none; border-radius: 0 0 20px 20px; position: relative; overflow: hidden; background: rgba(255,255,255,0.1); transition: border-color 0.3s; box-shadow: inset 0 0 20px rgba(255,255,255,0.5); }
+        .dark .bottle-body { border-color: #475569; box-shadow: inset 0 0 20px rgba(0,0,0,0.5); }
+        
+        .water-level { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%); transition: height 1.5s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 10; }
+        .water-wave { position: absolute; top: -15px; left: 0; width: 200%; height: 20px; background: url('data:image/svg+xml;utf8,<svg viewBox="0 0 140 20" xmlns="http://www.w3.org/2000/svg"><path d="M0 10 Q 35 20, 70 10 T 140 10 L 140 20 L 0 20 Z" fill="%2360a5fa"/></svg>') repeat-x; animation: wave 2s linear infinite; }
+
+        /* Inputs & Buttons */
+        .bev-option { transition: all 0.2s; border: 2px solid transparent; }
+        .bev-option.selected { border-color: #3b82f6; background-color: #eff6ff; transform: scale(1.05); }
+        .dark .bev-option.selected { background-color: rgba(59, 130, 246, 0.2); }
+
+        .badge { filter: grayscale(100%); opacity: 0.5; transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+        .badge.earned { filter: grayscale(0%); opacity: 1; transform: scale(1.15) rotate(5deg); }
+        
+        /* Chat Widget */
+        #chat-widget { transition: transform 0.3s ease, opacity 0.3s ease; }
+        #chat-widget.hidden { transform: translateY(20px); opacity: 0; pointer-events: none; }
+        .chat-bubble { max-width: 80%; padding: 0.75rem; border-radius: 1rem; margin-bottom: 0.5rem; font-size: 0.9rem;}
+        .user-bubble { background-color: #3b82f6; color: white; margin-left: auto; border-bottom-right-radius: 0.25rem;}
+        .ai-bubble { background-color: #e2e8f0; color: #1e293b; margin-right: auto; border-bottom-left-radius: 0.25rem;}
+        .dark .ai-bubble { background-color: #334155; color: #f8fafc;}
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 dark:bg-darkBg dark:text-slate-100 min-h-screen">
+
+    <!-- 1. PREMIUM ENTRY PAGE -->
+    <section id="landing-page" class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-600 to-cyan-400 dark:from-slate-900 dark:to-blue-900 text-white relative overflow-hidden px-4">
+        <div class="absolute w-32 h-32 bg-white/10 rounded-full top-20 left-20 animate-float"></div>
+        <div class="absolute w-24 h-24 bg-white/10 rounded-full bottom-40 right-32 animate-float" style="animation-delay: 1s;"></div>
+        <div class="absolute w-16 h-16 bg-white/10 rounded-full top-1/2 left-2/3 animate-float" style="animation-delay: 2s;"></div>
+
+        <div class="z-10 text-center max-w-5xl mx-auto">
+            <i class="fa-solid fa-droplet text-6xl mb-6 animate-bounce text-cyan-200"></i>
+            <h1 class="text-5xl md:text-7xl font-extrabold mb-4 tracking-tight">AquaSmart <span class="text-cyan-200">Pro</span></h1>
+            <p class="text-xl md:text-2xl font-light mb-10 text-blue-100">Your Ultimate AI-Powered Hydration Ecosystem</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12 text-left">
+                <div class="glass p-6 rounded-2xl transition transform hover:-translate-y-2 cursor-default text-slate-800 dark:text-white hover:bg-white/80 dark:hover:bg-slate-800/80">
+                    <i class="fa-solid fa-microphone-lines text-3xl mb-4 text-blue-600 dark:text-cyan-400"></i>
+                    <h3 class="text-xl font-bold mb-2">Voice Logging</h3>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm">Just speak to log your drinks instantly using advanced speech recognition.</p>
+                </div>
+                <div class="glass p-6 rounded-2xl transition transform hover:-translate-y-2 cursor-default text-slate-800 dark:text-white hover:bg-white/80 dark:hover:bg-slate-800/80">
+                    <i class="fa-solid fa-mug-hot text-3xl mb-4 text-blue-600 dark:text-cyan-400"></i>
+                    <h3 class="text-xl font-bold mb-2">Smart Beverages</h3>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm">Tracks water, coffee, and tea with unique hydration multipliers.</p>
+                </div>
+                <div class="glass p-6 rounded-2xl transition transform hover:-translate-y-2 cursor-default text-slate-800 dark:text-white hover:bg-white/80 dark:hover:bg-slate-800/80">
+                    <i class="fa-solid fa-brain text-3xl mb-4 text-blue-600 dark:text-cyan-400"></i>
+                    <h3 class="text-xl font-bold mb-2">AI Insights</h3>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm">Personalized reports based on your exact habits and weather.</p>
+                </div>
+                <div class="glass p-6 rounded-2xl transition transform hover:-translate-y-2 cursor-default text-slate-800 dark:text-white hover:bg-white/80 dark:hover:bg-slate-800/80">
+                    <i class="fa-solid fa-trophy text-3xl mb-4 text-blue-600 dark:text-cyan-400"></i>
+                    <h3 class="text-xl font-bold mb-2">Gamification</h3>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm">Earn badges, track streaks, and celebrate with confetti effects.</p>
+                </div>
+            </div>
+
+            <button onclick="enterDashboard()" class="bg-white text-blue-600 px-10 py-4 rounded-full font-bold text-xl hover:bg-blue-50 hover:shadow-2xl transition transform hover:scale-105 shadow-xl flex items-center justify-center mx-auto gap-3">
+                Enter Dashboard <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </section>
+
+    <!-- 2. PROFILE SETUP -->
+    <section id="profile-setup" class="hidden min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-600 to-cyan-400 dark:from-slate-900 dark:to-blue-900 relative px-4">
+        <div class="absolute w-40 h-40 bg-white/5 rounded-full top-10 right-10 animate-pulse"></div>
+        <div class="absolute w-32 h-32 bg-white/5 rounded-full bottom-10 left-10 animate-pulse" style="animation-delay: 1s;"></div>
+        
+        <div class="glass p-8 rounded-3xl w-full max-w-md shadow-2xl relative z-10 text-center border border-white/50 dark:border-white/10 text-slate-800 dark:text-slate-100">
+            <i class="fa-solid fa-user-astronaut text-5xl mb-4 text-blue-600 dark:text-blue-400"></i>
+            <h2 class="text-3xl font-extrabold mb-2">Let's Personalize It</h2>
+            <p class="text-slate-600 dark:text-slate-300 mb-8 text-sm">Tell us a bit about yourself so we can calculate your optimal daily hydration goal based on your weight.</p>
+            
+            <div class="space-y-4 text-left">
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-200">Your Name</label>
+                    <input type="text" id="user-name" placeholder="e.g. Alex" class="w-full bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 rounded-xl p-3 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-800 transition shadow-inner">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-200">Weight (kg)</label>
+                    <input type="number" id="user-weight" placeholder="e.g. 70" class="w-full bg-white/80 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-600 rounded-xl p-3 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-slate-800 transition shadow-inner">
+                </div>
+            </div>
+            
+            <button onclick="saveProfile()" class="mt-8 w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg transform hover:-translate-y-1">
+                Calculate My Goal
+            </button>
+        </div>
+    </section>
+
+    <!-- 3. DASHBOARD -->
+    <section id="dashboard" class="hidden min-h-screen flex flex-col">
+        
+        <!-- Navbar -->
+        <nav class="glass sticky top-0 z-50 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex justify-between items-center shadow-sm">
+            <div class="flex items-center gap-2 font-bold text-2xl text-blue-600 dark:text-blue-400">
+                <i class="fa-solid fa-droplet"></i> AquaSmart
+            </div>
+            <div class="flex items-center gap-3 md:gap-4">
+                <button id="notification-btn" onclick="toggleNotifications()" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition relative" title="Toggle Reminders">
+                    <i class="fa-solid fa-bell text-xl"></i>
+                    <span id="notif-badge" class="absolute top-0 right-0 w-3 h-3 bg-red-500 rounded-full hidden"></span>
+                </button>
+                <button onclick="toggleDarkMode()" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Toggle Theme">
+                    <i id="theme-icon" class="fa-solid fa-moon text-xl"></i>
+                </button>
+                <button onclick="editProfile()" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Edit Profile">
+                    <i class="fa-solid fa-user-pen text-xl"></i>
+                </button>
+                <div id="user-avatar" class="w-10 h-10 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full flex items-center justify-center text-white font-bold shadow-md cursor-pointer" title="You">
+                    You
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Grid -->
+        <main class="flex-grow p-4 md:p-6 max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-12 gap-6">
+            
+            <!-- Left Column: Visualizer & Logging -->
+            <div class="md:col-span-4 flex flex-col gap-6">
+                <!-- Animated Progress Card -->
+                <div class="bg-white dark:bg-darkCard rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 text-center relative overflow-hidden">
+                    <h2 class="text-xl font-bold mb-1">Daily Progress</h2>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mb-4">Goal: <span id="display-goal">2500</span> ml</p>
+                    
+                    <div class="bottle-container">
+                        <div class="bottle-cap"></div>
+                        <div class="bottle-neck"></div>
+                        <div class="bottle-body">
+                            <div id="water-fill" class="water-level">
+                                <div class="water-wave"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h3 class="text-4xl font-extrabold text-blue-600 dark:text-blue-400" id="display-consumed">0 <span class="text-lg font-medium text-slate-500">ml</span></h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1"><span id="display-remaining">2500</span> ml remaining</p>
+                    </div>
+                </div>
+
+                <!-- Advanced Beverage Logging -->
+                <div class="bg-white dark:bg-darkCard rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-plus-circle text-blue-500"></i> Log Drink</h2>
+                        <button onclick="startVoiceLogging()" id="voice-btn" class="w-10 h-10 rounded-full bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400 flex items-center justify-center hover:bg-blue-200 transition relative" title="Use Voice Commands">
+                            <i class="fa-solid fa-microphone"></i>
+                            <span id="voice-ping" class="absolute inset-0 rounded-full bg-blue-400 opacity-0"></span>
+                        </button>
+                    </div>
+                    
+                    <!-- Beverage Types -->
+                    <div class="flex gap-2 overflow-x-auto pb-2 mb-4 snap-x" id="beverage-selector">
+                        <div onclick="selectBeverage('water')" id="bev-water" class="bev-option selected flex-shrink-0 w-20 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 flex flex-col items-center cursor-pointer snap-center">
+                            <i class="fa-solid fa-glass-water text-xl text-blue-500 mb-1"></i>
+                            <span class="text-xs font-medium">Water</span>
+                            <span class="text-[10px] text-slate-400">100%</span>
+                        </div>
+                        <div onclick="selectBeverage('coffee')" id="bev-coffee" class="bev-option flex-shrink-0 w-20 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 flex flex-col items-center cursor-pointer snap-center">
+                            <i class="fa-solid fa-mug-hot text-xl text-amber-700 mb-1"></i>
+                            <span class="text-xs font-medium">Coffee</span>
+                            <span class="text-[10px] text-slate-400">80%</span>
+                        </div>
+                        <div onclick="selectBeverage('tea')" id="bev-tea" class="bev-option flex-shrink-0 w-20 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 flex flex-col items-center cursor-pointer snap-center">
+                            <i class="fa-solid fa-leaf text-xl text-green-500 mb-1"></i>
+                            <span class="text-xs font-medium">Tea</span>
+                            <span class="text-[10px] text-slate-400">90%</span>
+                        </div>
+                        <div onclick="selectBeverage('juice')" id="bev-juice" class="bev-option flex-shrink-0 w-20 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 flex flex-col items-center cursor-pointer snap-center">
+                            <i class="fa-solid fa-lemon text-xl text-orange-500 mb-1"></i>
+                            <span class="text-xs font-medium">Juice</span>
+                            <span class="text-[10px] text-slate-400">90%</span>
+                        </div>
+                        <div onclick="selectBeverage('soda')" id="bev-soda" class="bev-option flex-shrink-0 w-20 p-2 rounded-xl bg-slate-50 dark:bg-slate-800 flex flex-col items-center cursor-pointer snap-center">
+                            <i class="fa-solid fa-bottle-droplet text-xl text-red-500 mb-1"></i>
+                            <span class="text-xs font-medium">Soda</span>
+                            <span class="text-[10px] text-slate-400">70%</span>
+                        </div>
+                    </div>
+
+                    <!-- Custom Amount Input -->
+                    <div class="flex gap-2">
+                        <div class="relative flex-grow">
+                            <input type="number" id="custom-amount" value="250" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500 font-bold text-lg">
+                            <span class="absolute right-4 top-3.5 text-slate-400 font-medium">ml</span>
+                        </div>
+                        <button onclick="logDrink()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 rounded-xl font-bold transition shadow-md transform hover:scale-105 active:scale-95">
+                            Add
+                        </button>
+                    </div>
+                    <p id="voice-feedback" class="text-xs text-blue-500 mt-2 h-4 transition-opacity opacity-0 text-center font-medium">Listening...</p>
+                </div>
+            </div>
+
+            <!-- Middle Column: Stats, Logs & Modifiers -->
+            <div class="md:col-span-4 flex flex-col gap-6">
+                <!-- Modifiers: Weather & Activity -->
+                <div class="bg-white dark:bg-darkCard rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 flex gap-4">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Activity</label>
+                        <select id="activity-select" onchange="recalculateGoal()" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg p-2 text-sm outline-none focus:ring-1 focus:ring-blue-500">
+                            <option value="low">Low (Normal)</option>
+                            <option value="medium">Med (+300ml)</option>
+                            <option value="high">High (+600ml)</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Weather</label>
+                        <select id="weather-select" onchange="recalculateGoal()" class="w-full bg-slate-50 dark:bg-slate-800 border-none rounded-lg p-2 text-sm outline-none focus:ring-1 focus:ring-blue-500">
+                            <option value="normal">Normal</option>
+                            <option value="hot">Hot (+500ml)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Today's Log Timeline -->
+                <div class="bg-white dark:bg-darkCard rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 flex-grow flex flex-col max-h-[350px]">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-list text-purple-500"></i> Today's Log</h2>
+                        <button onclick="undoLastDrink()" class="text-xs text-slate-400 hover:text-red-500 transition"><i class="fa-solid fa-rotate-left"></i> Undo</button>
+                    </div>
+                    
+                    <div id="today-log-container" class="flex-grow overflow-y-auto pr-2 space-y-3">
+                        <div class="text-center text-sm text-slate-400 mt-10">No drinks logged today.</div>
+                    </div>
+                </div>
+
+                <!-- Achievements -->
+                <div class="bg-white dark:bg-darkCard rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2"><i class="fa-solid fa-medal text-yellow-500"></i> Achievements</h2>
+                    <div class="grid grid-cols-4 gap-2 text-center">
+                        <div class="badge flex flex-col items-center gap-1" id="badge-first">
+                            <div class="w-10 h-10 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center text-lg shadow-sm"><i class="fa-solid fa-glass-water"></i></div>
+                            <span class="text-[10px] font-medium leading-tight">First Glass</span>
+                        </div>
+                        <div class="badge flex flex-col items-center gap-1" id="badge-half">
+                            <div class="w-10 h-10 rounded-full bg-purple-100 text-purple-500 flex items-center justify-center text-lg shadow-sm"><i class="fa-solid fa-battery-half"></i></div>
+                            <span class="text-[10px] font-medium leading-tight">Halfway</span>
+                        </div>
+                        <div class="badge flex flex-col items-center gap-1" id="badge-goal">
+                            <div class="w-10 h-10 rounded-full bg-green-100 text-green-500 flex items-center justify-center text-lg shadow-sm"><i class="fa-solid fa-check-double"></i></div>
+                            <span class="text-[10px] font-medium leading-tight">Goal Met</span>
+                        </div>
+                        <div class="badge flex flex-col items-center gap-1" id="badge-streak">
+                            <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-500 flex items-center justify-center text-lg shadow-sm"><i class="fa-solid fa-fire"></i></div>
+                            <span class="text-[10px] font-medium leading-tight">3-Day Streak</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: AI & Charts -->
+            <div class="md:col-span-4 flex flex-col gap-6">
+                <!-- Weekly Chart -->
+                <div class="bg-white dark:bg-darkCard rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800">
+                    <h2 class="text-lg font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-chart-column text-blue-500"></i> Weekly History</h2>
+                    <div class="relative h-[150px]">
+                        <canvas id="weeklyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- AI Hydration Report -->
+                <div class="bg-white dark:bg-darkCard rounded-3xl p-6 shadow-sm border border-slate-100 dark:border-slate-800 flex-grow flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-purple-500"></i> AI Analysis</h2>
+                        <button onclick="generateReport()" id="gen-report-btn" class="text-sm bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 px-3 py-1 rounded-full font-medium hover:bg-purple-200 transition shadow-sm">
+                            Generate
+                        </button>
+                    </div>
+                    
+                    <div id="report-content" class="text-sm text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl flex-grow overflow-y-auto max-h-[250px] whitespace-pre-wrap flex flex-col border border-slate-100 dark:border-slate-700 mb-4">
+                        <div class="m-auto text-center opacity-50">
+                            <i class="fa-solid fa-robot text-3xl mb-2"></i>
+                            <p>Click generate for personalized insights based on your exact drinks and habits.</p>
+                        </div>
+                    </div>
+
+                    <!-- Download Report Button -->
+                    <button onclick="downloadReport()" id="download-btn" class="w-full bg-slate-800 dark:bg-slate-700 text-white py-3 rounded-xl font-bold hover:bg-slate-900 transition flex justify-center items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        <i class="fa-solid fa-download"></i> Download Report (TXT)
+                    </button>
+                </div>
+            </div>
+        </main>
+    </section>
+
+    <!-- Chatbot Floating Widget -->
+    <div id="chat-widget" class="fixed bottom-24 right-6 w-80 max-w-[calc(100vw-3rem)] bg-white dark:bg-darkCard rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col hidden z-50 overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-cyan-500 p-4 flex justify-between items-center text-white">
+            <h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-robot"></i> Aqua AI Coach</h3>
+            <button onclick="toggleChat()" class="text-white hover:text-blue-200 transition"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="chat-messages" class="flex-grow p-4 h-64 overflow-y-auto flex flex-col gap-2 text-sm bg-slate-50 dark:bg-slate-800/50">
+            <div class="ai-bubble">Hi there! I analyze your drink log and progress. Ask me for tips or hydration facts!</div>
+        </div>
+        <div class="p-3 bg-white dark:bg-darkCard border-t border-slate-200 dark:border-slate-700 flex gap-2">
+            <input type="text" id="chat-input" placeholder="Type a message..." class="flex-grow bg-slate-100 dark:bg-slate-800 border-none rounded-full px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+            <button onclick="sendChatMessage()" class="bg-blue-600 hover:bg-blue-700 text-white w-10 h-10 rounded-full flex items-center justify-center transition"><i class="fa-solid fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- Floating Chat Toggle Button -->
+    <button onclick="toggleChat()" id="chat-toggle-btn" class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-blue-600 to-cyan-500 text-white rounded-full shadow-lg flex items-center justify-center text-2xl hover:shadow-xl transition transform hover:scale-105 z-40 hidden">
+        <i class="fa-solid fa-comment-dots"></i>
+    </button>
+
+    <script>
+        /* ========================================================
+           IMPORTANT: PASTE YOUR GOOGLE GEMINI API KEY BELOW 
+           ======================================================== */
+        const apiKey = "AIzaSyDGl_7C1RSR_NdeSNaDyfb4Ht4gIBOZjnw"; 
+        
+        // This direct URL hits Gemini from your browser. No backend required!
+        const AI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+        
+        /* --- CONSTANTS & STATE --- */
+        const beverages = {
+            water: { name: 'Water', icon: 'fa-glass-water', mult: 1.0, color: 'text-blue-500', bg: 'bg-blue-100 dark:bg-blue-900/30' },
+            coffee: { name: 'Coffee', icon: 'fa-mug-hot', mult: 0.8, color: 'text-amber-700', bg: 'bg-amber-100 dark:bg-amber-900/30' },
+            tea: { name: 'Tea', icon: 'fa-leaf', mult: 0.9, color: 'text-green-500', bg: 'bg-green-100 dark:bg-green-900/30' },
+            juice: { name: 'Juice', icon: 'fa-lemon', mult: 0.9, color: 'text-orange-500', bg: 'bg-orange-100 dark:bg-orange-900/30' },
+            soda: { name: 'Soda', icon: 'fa-bottle-droplet', mult: 0.7, color: 'text-red-500', bg: 'bg-red-100 dark:bg-red-900/30' }
+        };
+
+        let state = {
+            name: '',
+            weight: 0,
+            isProfileSet: false,
+            baseGoal: 2500,
+            finalGoal: 2500,
+            consumed: 0,
+            selectedBev: 'water',
+            activity: 'low',
+            weather: 'normal',
+            remindersEnabled: false,
+            theme: 'light',
+            todayLogs: [], 
+            history: [], 
+            lastReport: ''
+        };
+
+        let reminderInterval;
+        let weeklyChartInstance = null;
+        let isRecording = false;
+
+        /* --- INITIALIZATION --- */
+        document.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            applyTheme();
+            updateUI();
+            initChart();
+            renderLogs();
+            
+            document.getElementById('chat-input').addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') sendChatMessage();
+            });
+        });
+
+        /* --- NAVIGATION & PROFILE --- */
+        function enterDashboard(force = false) {
+            if (!state.isProfileSet && !force) {
+                document.getElementById('landing-page').classList.add('hidden');
+                document.getElementById('profile-setup').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('landing-page').classList.add('hidden');
+            document.getElementById('profile-setup').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('chat-toggle-btn').classList.remove('hidden');
+            updateWeeklyChart(); 
+        }
+
+        function saveProfile() {
+            const nameInput = document.getElementById('user-name').value.trim();
+            const weightInput = parseFloat(document.getElementById('user-weight').value);
+            
+            if (!nameInput || isNaN(weightInput) || weightInput <= 0) {
+                alert("Please enter a valid name and weight.");
+                return;
+            }
+
+            state.name = nameInput;
+            state.weight = weightInput;
+            state.isProfileSet = true;
+            state.baseGoal = Math.round(weightInput * 35);
+            
+            recalculateGoal(true);
+            saveState();
+            updateProfileUI();
+            enterDashboard(true);
+        }
+
+        function editProfile() {
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('chat-toggle-btn').classList.add('hidden');
+            document.getElementById('user-name').value = state.name;
+            document.getElementById('user-weight').value = state.weight;
+            document.getElementById('profile-setup').classList.remove('hidden');
+        }
+
+        function updateProfileUI() {
+            if (state.name) {
+                const initials = state.name.substring(0, 2).toUpperCase();
+                document.getElementById('user-avatar').innerText = initials;
+                document.getElementById('user-avatar').title = state.name;
+            }
+        }
+
+        /* --- STATE MANAGEMENT --- */
+        function loadState() {
+            const saved = localStorage.getItem('aquaSmartGodState');
+            if (saved) {
+                state = { ...state, ...JSON.parse(saved) };
+                
+                const today = new Date().toISOString().split('T')[0];
+                const lastRecord = state.history.length > 0 ? state.history[state.history.length - 1] : null;
+                
+                if (lastRecord && lastRecord.date !== today) {
+                    state.consumed = 0;
+                    state.todayLogs = []; 
+                }
+            }
+            
+            document.getElementById('activity-select').value = state.activity;
+            document.getElementById('weather-select').value = state.weather;
+            selectBeverage(state.selectedBev || 'water');
+            
+            recalculateGoal(false);
+            updateProfileUI();
+            
+            if (state.remindersEnabled && Notification.permission === 'granted') {
+                enableReminders();
+            }
+        }
+
+        function saveState() {
+            const today = new Date().toISOString().split('T')[0];
+            const existingIndex = state.history.findIndex(h => h.date === today);
+            
+            if (existingIndex >= 0) {
+                state.history[existingIndex] = { date: today, consumed: state.consumed, goal: state.finalGoal };
+            } else {
+                state.history.push({ date: today, consumed: state.consumed, goal: state.finalGoal });
+                if (state.history.length > 7) state.history.shift();
+            }
+
+            localStorage.setItem('aquaSmartGodState', JSON.stringify(state));
+        }
+
+        /* --- SOUND & GAMIFICATION --- */
+        function playDropSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, ctx.currentTime + 0.1);
+                
+                gain.gain.setValueAtTime(0.5, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc.start();
+                osc.stop(ctx.currentTime + 0.15);
+            } catch (e) { console.log("Audio API not supported"); }
+        }
+
+        function triggerGoalConfetti() {
+            var duration = 3 * 1000;
+            var animationEnd = Date.now() + duration;
+            var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+
+            function randomInRange(min, max) { return Math.random() * (max - min) + min; }
+
+            var interval = setInterval(function() {
+                var timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
+                var particleCount = 50 * (timeLeft / duration);
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } }));
+                confetti(Object.assign({}, defaults, { particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } }));
+            }, 250);
+        }
+
+        /* --- CORE LOGIC & LOGGING --- */
+        function recalculateGoal(shouldUpdateUI = true) {
+            state.activity = document.getElementById('activity-select').value;
+            state.weather = document.getElementById('weather-select').value;
+            
+            let extra = 0;
+            if (state.activity === 'medium') extra += 300;
+            if (state.activity === 'high') extra += 600;
+            if (state.weather === 'hot') extra += 500;
+            
+            state.finalGoal = state.baseGoal + extra;
+            
+            if (shouldUpdateUI) { updateUI(); saveState(); }
+        }
+
+        function selectBeverage(type) {
+            state.selectedBev = type;
+            document.querySelectorAll('.bev-option').forEach(el => el.classList.remove('selected'));
+            document.getElementById('bev-' + type).classList.add('selected');
+        }
+
+        function logDrink() {
+            const amount = parseInt(document.getElementById('custom-amount').value);
+            if (isNaN(amount) || amount <= 0) return;
+            processDrink(amount, state.selectedBev);
+        }
+
+        function processDrink(amount, bevTypeKey) {
+            const bev = beverages[bevTypeKey];
+            const effectiveHydration = Math.round(amount * bev.mult);
+            
+            const prevConsumed = state.consumed;
+            state.consumed += effectiveHydration;
+            
+            const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            state.todayLogs.unshift({
+                id: Date.now(),
+                time: timeStr,
+                type: bevTypeKey,
+                amount: amount,
+                effective: effectiveHydration
+            });
+
+            playDropSound();
+            if (prevConsumed < state.finalGoal && state.consumed >= state.finalGoal) triggerGoalConfetti();
+
+            updateUI();
+            renderLogs();
+            saveState();
+        }
+
+        function undoLastDrink() {
+            if (state.todayLogs.length === 0) return;
+            const lastLog = state.todayLogs.shift();
+            state.consumed = Math.max(0, state.consumed - lastLog.effective);
+            
+            updateUI();
+            renderLogs();
+            saveState();
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('today-log-container');
+            if (state.todayLogs.length === 0) {
+                container.innerHTML = '<div class="text-center text-sm text-slate-400 mt-10">No drinks logged today.</div>';
+                return;
+            }
+
+            container.innerHTML = state.todayLogs.map(log => {
+                const bev = beverages[log.type];
+                return `
+                <div class="flex items-center gap-3 p-3 rounded-xl ${bev.bg} animate-[fadeIn_0.3s_ease-out]">
+                    <div class="w-10 h-10 rounded-full bg-white dark:bg-slate-800 flex items-center justify-center shadow-sm">
+                        <i class="fa-solid ${bev.icon} ${bev.color}"></i>
+                    </div>
+                    <div class="flex-grow">
+                        <h4 class="font-bold text-sm capitalize">${bev.name} <span class="font-normal text-xs text-slate-500">(${log.amount}ml)</span></h4>
+                        <p class="text-[11px] text-slate-500 font-medium">+${log.effective}ml hydration</p>
+                    </div>
+                    <div class="text-xs font-bold text-slate-400">${log.time}</div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function updateUI() {
+            document.getElementById('display-goal').innerText = state.finalGoal;
+            document.getElementById('display-consumed').innerHTML = `${state.consumed} <span class="text-lg font-medium text-slate-500">ml</span>`;
+            
+            const remaining = Math.max(0, state.finalGoal - state.consumed);
+            document.getElementById('display-remaining').innerText = remaining;
+
+            const percentage = Math.min(100, (state.consumed / state.finalGoal) * 100);
+            document.getElementById('water-fill').style.height = `${percentage}%`;
+
+            checkBadges();
+            updateWeeklyChart();
+        }
+
+        /* --- VOICE RECOGNITION --- */
+        function startVoiceLogging() {
+            const feedback = document.getElementById('voice-feedback');
+            const ping = document.getElementById('voice-ping');
+            
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                feedback.innerText = "Voice not supported in this browser.";
+                feedback.style.opacity = 1;
+                setTimeout(() => feedback.style.opacity = 0, 3000);
+                return;
+            }
+
+            if(isRecording) return;
+            
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = () => {
+                isRecording = true;
+                ping.classList.add('animate-pulse-fast');
+                ping.classList.remove('opacity-0');
+                feedback.innerText = "Listening... (e.g., 'Add 300ml of Coffee')";
+                feedback.style.opacity = 1;
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.toLowerCase();
+                const amountMatch = transcript.match(/(\d+)/);
+                let amount = amountMatch ? parseInt(amountMatch[1]) : null;
+                
+                let detectedBev = 'water';
+                if(transcript.includes('coffee')) detectedBev = 'coffee';
+                else if(transcript.includes('tea')) detectedBev = 'tea';
+                else if(transcript.includes('soda')) detectedBev = 'soda';
+                else if(transcript.includes('juice')) detectedBev = 'juice';
+
+                if (amount) {
+                    feedback.innerText = `Adding ${amount}ml of ${detectedBev}...`;
+                    processDrink(amount, detectedBev);
+                    setTimeout(() => feedback.style.opacity = 0, 2000);
+                } else {
+                    feedback.innerText = "Couldn't detect an amount. Try again.";
+                    setTimeout(() => feedback.style.opacity = 0, 3000);
+                }
+            };
+
+            recognition.onerror = (e) => {
+                feedback.innerText = "Error listening.";
+                setTimeout(() => feedback.style.opacity = 0, 2000);
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                ping.classList.remove('animate-pulse-fast');
+                ping.classList.add('opacity-0');
+            };
+
+            recognition.start();
+        }
+
+        /* --- BADGES --- */
+        function checkBadges() {
+            if (state.consumed > 0) document.getElementById('badge-first').classList.add('earned');
+            else document.getElementById('badge-first').classList.remove('earned');
+
+            if (state.consumed >= state.finalGoal / 2 && state.finalGoal > 0) 
+                document.getElementById('badge-half').classList.add('earned');
+            else document.getElementById('badge-half').classList.remove('earned');
+
+            if (state.consumed >= state.finalGoal && state.finalGoal > 0) 
+                document.getElementById('badge-goal').classList.add('earned');
+            else document.getElementById('badge-goal').classList.remove('earned');
+
+            let streakDays = 0;
+            const today = new Date().toISOString().split('T')[0];
+            const sortedHistory = [...state.history].reverse(); 
+            
+            for (let i = 0; i < sortedHistory.length; i++) {
+                if (sortedHistory[i].consumed >= sortedHistory[i].goal) streakDays++;
+                else if (sortedHistory[i].date !== today) break; 
+            }
+            if (streakDays >= 3) document.getElementById('badge-streak').classList.add('earned');
+            else document.getElementById('badge-streak').classList.remove('earned');
+        }
+
+        /* --- DARK MODE --- */
+        function toggleDarkMode() {
+            state.theme = state.theme === 'light' ? 'dark' : 'light';
+            applyTheme();
+            saveState();
+            updateWeeklyChart(); 
+        }
+
+        function applyTheme() {
+            const html = document.documentElement;
+            const icon = document.getElementById('theme-icon');
+            
+            if (state.theme === 'dark') {
+                html.classList.add('dark');
+                icon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                html.classList.remove('dark');
+                icon.classList.replace('fa-sun', 'fa-moon');
+            }
+        }
+
+        function toggleNotifications() {
+            if (!state.remindersEnabled) {
+                if ("Notification" in window) {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === "granted") enableReminders();
+                        else alert("Notifications blocked by browser.");
+                    });
+                } else alert("Your browser doesn't support notifications.");
+            } else disableReminders();
+        }
+
+        function enableReminders() {
+            state.remindersEnabled = true;
+            document.getElementById('notif-badge').classList.remove('hidden');
+            document.getElementById('notification-btn').classList.add('text-blue-500');
+            if(reminderInterval) clearInterval(reminderInterval);
+            reminderInterval = setInterval(() => {
+                new Notification("AquaSmart", { body: "Time to hydrate!", icon: "https://cdn-icons-png.flaticon.com/512/3105/3105807.png" });
+            }, 60 * 60 * 1000); 
+            saveState();
+        }
+
+        function disableReminders() {
+            state.remindersEnabled = false;
+            document.getElementById('notif-badge').classList.add('hidden');
+            document.getElementById('notification-btn').classList.remove('text-blue-500');
+            if(reminderInterval) clearInterval(reminderInterval);
+            saveState();
+        }
+
+        /* --- CHART.JS --- */
+        function initChart() {
+            const ctx = document.getElementById('weeklyChart').getContext('2d');
+            Chart.defaults.color = state.theme === 'dark' ? '#94a3b8' : '#64748b';
+            Chart.defaults.font.family = 'Inter';
+
+            weeklyChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: { labels: [], datasets: [{ label: 'Hydration (ml)', data: [], backgroundColor: '#3b82f6', borderRadius: 6 }] },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: state.theme === 'dark' ? '#334155' : '#e2e8f0' } },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function updateWeeklyChart() {
+            if (!weeklyChartInstance) return;
+            const labels = [], data = [];
+            const today = new Date();
+            
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(today);
+                d.setDate(d.getDate() - i);
+                const dateStr = d.toISOString().split('T')[0];
+                labels.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
+                
+                const record = state.history.find(h => h.date === dateStr);
+                data.push(record ? record.consumed : 0);
+            }
+
+            weeklyChartInstance.data.labels = labels;
+            weeklyChartInstance.data.datasets[0].data = data;
+            Chart.defaults.color = state.theme === 'dark' ? '#94a3b8' : '#64748b';
+            weeklyChartInstance.options.scales.y.grid.color = state.theme === 'dark' ? '#334155' : '#e2e8f0';
+            weeklyChartInstance.update();
+        }
+
+        /* --- DIRECT AI CALL (NO BACKEND NEEDED) --- */
+        async function fetchAI(promptText) {
+            if (apiKey === "YOUR_GEMINI_API_KEY_HERE" || !apiKey) {
+                alert("Please add your Gemini API Key at the top of the index.html file to use AI features.");
+                throw new Error("Missing API Key");
+            }
+
+            const payload = { contents: [{ parts: [{ text: promptText }] }] };
+
+            for (let i = 0; i < 5; i++) {
+                try {
+                    const res = await fetch(AI_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if(data.candidates && data.candidates[0].content.parts[0].text) {
+                        return data.candidates[0].content.parts[0].text;
+                    }
+                    if(data.error) throw new Error(data.error.message);
+                    throw new Error("Invalid response");
+                } catch (e) {
+                    if (i === 4) throw e;
+                    await new Promise(r => setTimeout(r, Math.pow(2, i) * 1000));
+                }
+            }
+        }
+
+        /* --- AI REPORT --- */
+        async function generateReport() {
+            const btn = document.getElementById('gen-report-btn');
+            const content = document.getElementById('report-content');
+            const downloadBtn = document.getElementById('download-btn');
+            
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Wait...';
+            btn.disabled = true;
+            downloadBtn.disabled = true;
+            content.innerHTML = `<div class="m-auto flex flex-col items-center opacity-70"><div class="w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full animate-spin mb-3"></div><p>AI is analyzing your specific drinks...</p></div>`;
+
+            const logSummary = state.todayLogs.length > 0 
+                ? state.todayLogs.map(l => `${l.amount}ml ${l.type}`).join(', ') 
+                : "No drinks logged yet.";
+
+            const currentDate = new Date().toLocaleString();
+            const prompt = `Act as an expert Hydration Coach. Generate a short hydration report for ${state.name}.
+            Date/Time: ${currentDate}
+            Profile: ${state.weight}kg.
+            Goal: ${state.finalGoal}ml. Effective Hydration Consumed: ${state.consumed}ml.
+            Specific Drinks Today: ${logSummary}.
+            Activity: ${state.activity}, Weather: ${state.weather}.
+            Rules: Use Markdown. Be encouraging. Comment on their beverage choices (e.g. too much coffee/soda vs water). Keep under 120 words.`;
+
+            try {
+                const responseText = await fetchAI(prompt);
+                content.innerHTML = responseText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\*(.*?)\*/g, '<em>$1</em>').replace(/\n/g, '<br>').replace(/- /g, '• ');
+                state.lastReport = responseText;
+                downloadBtn.disabled = false;
+                saveState();
+            } catch (error) {
+                content.innerHTML = `<div class="text-red-500 p-2"><i class="fa-solid fa-triangle-exclamation"></i> Error generating report: ${error.message}</div>`;
+            } finally {
+                btn.innerHTML = 'Regenerate';
+                btn.disabled = false;
+            }
+        }
+
+        function downloadReport() {
+            if (!state.lastReport) return;
+            
+            const dateStr = new Date().toLocaleDateString();
+            const timeStr = new Date().toLocaleTimeString();
+            
+            const reportContent = `
+=============================================
+ AQUASMART PRO - AI HYDRATION REPORT
+=============================================
+ User: ${state.name}
+ Date: ${dateStr} at ${timeStr}
+ Weight: ${state.weight} kg
+ 
+ --- TODAY'S STATS ---
+ Goal: ${state.finalGoal} ml
+ Consumed: ${state.consumed} ml
+ Activity Level: ${state.activity}
+ Weather: ${state.weather}
+
+ --- AI COACH INSIGHTS ---
+${state.lastReport.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')}
+
+=============================================
+ Stay Hydrated! 
+=============================================
+`;
+            const blob = new Blob([reportContent.trim()], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `AquaSmart-Report-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        /* --- CHATBOT --- */
+        function toggleChat() {
+            const widget = document.getElementById('chat-widget');
+            if (widget.classList.contains('hidden')) {
+                widget.classList.remove('hidden');
+                document.getElementById('chat-toggle-btn').classList.add('hidden');
+            } else {
+                widget.classList.add('hidden');
+                document.getElementById('chat-toggle-btn').classList.remove('hidden');
+            }
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const chatMessages = document.getElementById('chat-messages');
+            chatMessages.innerHTML += `<div class="chat-bubble user-bubble">${message}</div>`;
+            input.value = '';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            const loadingId = 'loading-' + Date.now();
+            chatMessages.innerHTML += `<div id="${loadingId}" class="chat-bubble ai-bubble opacity-70"><i class="fa-solid fa-ellipsis fa-bounce"></i></div>`;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            const logSummary = state.todayLogs.length > 0 ? state.todayLogs.map(l => `${l.amount}ml ${l.type}`).join(', ') : "none";
+            const currentDate = new Date().toLocaleString();
+            const promptContext = `You are AquaSmart AI. Current time: ${currentDate}. User: ${state.name} (${state.weight}kg). Goal: ${state.finalGoal}ml, Consumed: ${state.consumed}ml. Drinks logged today: ${logSummary}. Answer concisely in 1-2 sentences. User message: "${message}"`;
+            
+            try {
+                const reply = await fetchAI(promptContext);
+                document.getElementById(loadingId).remove();
+                chatMessages.innerHTML += `<div class="chat-bubble ai-bubble">${reply}</div>`;
+            } catch (err) {
+                document.getElementById(loadingId).remove();
+                chatMessages.innerHTML += `<div class="chat-bubble ai-bubble text-red-500">Error connecting to AI. Make sure your API key is set.</div>`;
+            }
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+    </script>
+</body>
+</html>
