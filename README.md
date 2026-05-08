@@ -1,4 +1,4 @@
-﻿# AquaSmart Pro
+# AquaSmart Pro
 
 A modern, polished hydration tracking experience built as a static single-page web app.
 
@@ -36,7 +36,8 @@ AquaSmart Pro is a front-end hydration coach built for web browsers. It combines
 
 - index.html — main application UI and logic
 - README.md — professional overview and usage guide
-- equirements.txt — project dependency notes for clarity
+- 
+equirements.txt — project dependency notes for clarity
 
 ## 💻 Local Setup
 

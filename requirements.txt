@@ -1,4 +1,4 @@
-﻿# AquaSmart Pro
+# AquaSmart Pro
 
 # Static front-end application: no Python packages are required.
 # To preview locally, run:
